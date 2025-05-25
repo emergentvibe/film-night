@@ -1,0 +1,412 @@
+/* Reset some browser defaults */
+body, h1, h2, h3, p, button, input, textarea {
+  margin: 0;
+  padding: 0;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center content horizontally */
+  min-height: 100vh;
+  padding-top: 2rem; /* Add some space at the top */
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #282c34;
+  color: white;
+  line-height: 1.6;
+}
+
+#root {
+  width: 100%;
+  max-width: 800px; /* Max width for the main content area */
+  margin: 0 auto; /* Centers #root if body align-items wasn't enough or for block elements */
+  padding: 1rem;
+  text-align: left; /* Reset text-align if body styling affects it undesirably */
+}
+
+/* Basic button styling */
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* Basic link styling for the nav */
+nav a {
+  margin-right: 1rem;
+  text-decoration: none;
+  color: #646cff;
+}
+nav a:hover {
+  text-decoration: underline;
+}
+
+/* Utility class for simple centering if needed directly on an element */
+.text-center {
+  text-align: center;
+}
+
+/* Add some spacing for UI elements */
+hr {
+  margin: 20px 0;
+  border-color: #333;
+  border: 0;
+  height: 1px;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0));
+  margin: 2rem 0;
+}
+
+input[type="text"],
+input[type="url"],
+input[type="number"],
+textarea {
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background-color: #333;
+  color: rgba(255, 255, 255, 0.87);
+  width: calc(100% - 1.2em); /* Account for padding */
+  background-color: #282c34;
+  color: white;
+  border: 1px solid #61dafb;
+  padding: 0.75em 1em;
+  font-size: 1rem;
+  width: calc(100% - 2.25em); /* Account for padding and border */
+}
+
+input[type='text']:focus,
+input[type='url']:focus,
+input[type='number']:focus,
+textarea:focus {
+  outline: none;
+  border-color: #bbe1fa; 
+  box-shadow: 0 0 0 2px rgba(97, 218, 251, 0.3);
+}
+
+textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.25em;
+  font-weight: 500;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+.container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1rem 2rem;
+  background-color: #3a3f47; 
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+h1, h2, h3, h4 {
+  color: #61dafb; /* React blue for headings */
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+  border-bottom: 2px solid #4a4f57;
+  padding-bottom: 0.3em;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+button, a.button-like {
+  background-color: #61dafb;
+  color: #20232a;
+  border: none;
+  padding: 0.75em 1.5em;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+button:hover, a.button-like:hover {
+  background-color: #bbe1fa;
+}
+
+button:active, a.button-like:active {
+  transform: translateY(1px);
+}
+
+button.danger {
+    background-color: #ff4d4d;
+    color: white;
+}
+button.danger:hover {
+    background-color: #ff7979;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  background-color: #424750; 
+  padding: 1em;
+  margin-bottom: 1em;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Specific styling for MovieItem to override general li if needed */
+.movie-item {
+  position: relative; /* For absolute positioning of delete button */
+  border-left: 5px solid #61dafb;
+}
+
+.movie-item img {
+  max-width: 100px;
+  max-height: 150px;
+  float: left;
+  margin-right: 1em;
+  border-radius: 4px;
+  border: 1px solid #555;
+}
+
+.movie-item h4 {
+  margin-top: 0;
+  color: #bbe1fa; /* Lighter blue for item titles */
+}
+
+.movie-item p {
+  margin-bottom: 0.3em;
+  font-size: 0.9rem;
+}
+
+.movie-item p strong {
+  color: #88ddff; /* Slightly different shade for emphasis */
+}
+
+.movie-item-actions {
+  clear: both;
+  padding-top: 0.5em;
+}
+
+.movie-item-actions a {
+  color: #61dafb;
+  text-decoration: none;
+}
+
+.movie-item-actions a:hover {
+  text-decoration: underline;
+}
+
+/* Delete button on MovieItem */
+.delete-movie-btn {
+  position: absolute; 
+  top: 10px; 
+  right: 10px; 
+  background: #ff6b6b !important; 
+  color: white !important;
+  border: none;
+  border-radius: 50%; 
+  width: 24px; 
+  height: 24px; 
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 0;
+}
+.delete-movie-btn:hover {
+  background: #ee5253 !important;
+}
+
+.comparison-area {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start; 
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.comparison-movie-card {
+  text-align: center; 
+  border: 2px solid #4f555e; 
+  padding: 1em;
+  width: 45%; 
+  cursor: pointer;
+  border-radius: 8px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+  background-color: #424750;
+}
+
+.comparison-movie-card:hover {
+  border-color: #61dafb;
+  transform: translateY(-3px);
+}
+
+.comparison-movie-card img {
+  max-width: 180px; 
+  max-height: 270px;
+  margin-bottom: 0.5em;
+  border-radius: 4px;
+}
+
+.comparison-movie-card h4 {
+  margin-top: 0;
+  font-size: 1.2rem;
+}
+
+.comparison-movie-card p.choose-text {
+  font-style: italic;
+  color: #88ddff;
+  font-size: 0.9rem;
+  margin-top: 0.5em;
+}
+
+.ranked-list ol {
+  padding-left: 20px; /* Indent numbers */
+}
+
+.ranked-list li {
+  border-left: 5px solid #4CAF50; /* Green for ranked items */
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+
+.ranked-list .rank-info {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.ranked-list img {
+  max-width: 80px; 
+  max-height: 120px; 
+  border-radius: 4px;
+}
+
+.error-message {
+  color: #ff6b6b; /* Light red for errors */
+  background-color: rgba(255, 107, 107, 0.1);
+  border: 1px solid #ff6b6b;
+  padding: 0.75em;
+  border-radius: 4px;
+  margin: 1em 0;
+}
+
+.info-message {
+    color: #61dafb;
+    background-color: rgba(97, 218, 251, 0.1);
+    border: 1px solid #61dafb;
+    padding: 0.75em;
+    border-radius: 4px;
+    margin: 1em 0;
+}
+
+/* Link for Session Page */
+.session-link-display {
+  background-color: #20232a;
+  padding: 0.75em 1em;
+  border-radius: 4px;
+  margin-bottom: 1.5em;
+  font-family: 'Courier New', Courier, monospace;
+  word-break: break-all;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    margin: 1rem;
+    padding: 1rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+  h2 {
+    font-size: 1.75rem;
+  }
+  h3 {
+    font-size: 1.3rem;
+  }
+
+  .comparison-area {
+    flex-direction: column;
+    align-items: center;
+  }
+  .comparison-movie-card {
+    width: 90%;
+    max-width: 350px;
+  }
+}
+
+@media (max-width: 480px) {
+   button, a.button-like {
+    font-size: 0.9rem;
+    padding: 0.6em 1.2em;
+  }
+  input[type='text'],
+  input[type='url'],
+  input[type='number'],
+  textarea {
+    font-size: 0.9rem;
+  }
+  .movie-item img {
+    max-width: 80px;
+    max-height: 120px;
+  }
+  .comparison-movie-card img {
+    max-width: 150px; 
+    max-height: 225px;
+  }
+}
