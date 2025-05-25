@@ -1,0 +1,8 @@
+Postgres cluster film-night-db created
+  Username:    postgres
+  Password:    DtDM7m10DH0mukI
+  Hostname:    film-night-db.internal
+  Flycast:     fdaa:10:aab3:0:1::4
+  Proxy port:  5432
+  Postgres port:  5433
+  Connection string: postgres://postgres:DtDM7m10DH0mukI@film-night-db.flycast:5432

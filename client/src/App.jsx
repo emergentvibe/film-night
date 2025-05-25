@@ -5,7 +5,7 @@ import { SessionPage } from './pages/SessionPage';
 
 function App() {
   return (
-    <div>
+      <div>
       <nav style={{ marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
         <Link to="/">Home</Link>
       </nav>
@@ -13,7 +13,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/session/:sessionId" element={<SessionPage />} />
       </Routes>
-    </div>
+      </div>
   );
 }
 

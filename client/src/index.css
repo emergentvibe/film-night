@@ -134,7 +134,7 @@ label {
   max-width: 900px;
   margin: 2rem auto;
   padding: 1rem 2rem;
-  background-color: #3a3f47; 
+  background-color: #3a3f47;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
@@ -142,7 +142,8 @@ label {
 h1, h2, h3, h4 {
   color: #61dafb; /* React blue for headings */
   margin-top: 1.5em;
-  margin-bottom: 0.5em;
+  margin-bottom: 0.75em; /* Adjusted margin */
+  background-color: transparent; /* Ensure headings don't have their own background */
 }
 
 h1 {
@@ -152,8 +153,8 @@ h1 {
 
 h2 {
   font-size: 2rem;
-  border-bottom: 2px solid #4a4f57;
-  padding-bottom: 0.3em;
+  /* border-bottom: 2px solid #4a4f57; */ /* Removed border */
+  /* padding-bottom: 0.3em; */ /* Removed padding */
 }
 
 h3 {
@@ -363,6 +364,54 @@ li {
   word-break: break-all;
 }
 
+.session-link-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 1.5em;
+}
+
+.session-link-label {
+  display: block;
+  margin-bottom: 0.25em;
+  font-weight: 500;
+  color: inherit;
+  font-size: inherit;
+}
+
+.session-link-input-group {
+  display: flex;
+  align-items: center;
+  width: 100%; /* Make the input group take full width */
+  background-color: #2c3038; /* Slightly different background for the input area */
+  padding: 0.5em 0.75em;
+  border-radius: 3px;
+  border: 1px solid #444;
+  box-sizing: border-box; /* Ensures padding and border are included in the width */
+}
+
+.session-link-text {
+  word-break: break-all;
+  margin-right: 1em; /* Space between text and button */
+  flex-grow: 1; /* Allow text to take available space */
+  color: #e0e0e0; /* Ensure link text is bright */
+}
+
+.copy-link-button {
+  padding: 0.4em 0.8em;
+  font-size: 0.9em;
+  background-color: #61dafb; /* Same as other primary buttons */
+  color: #20232a;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0; /* Prevent button from shrinking */
+}
+
+.copy-link-button:hover {
+  background-color: #bbe1fa;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .container {
@@ -409,4 +458,8 @@ li {
     max-width: 150px; 
     max-height: 225px;
   }
+}
+
+p {
+  background-color: transparent; /* Ensure paragraphs also inherit background */
 }

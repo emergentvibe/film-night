@@ -23,14 +23,15 @@ app.use('/api/sessions', (req, res, next) => {
 
 // Serve static files from the React app in production
 if (process.env.NODE_ENV === 'production') {
-  // Serve static files from the React app build directory
-  app.use(express.static(path.join(__dirname, '../client/dist')));
+  // Corrected path: ./client/dist relative to server/index.js
+  const clientBuildPath = path.join(__dirname, 'client/dist');
+  app.use(express.static(clientBuildPath));
 
   // The "catchall" handler: for any request that doesn't
   // match one above, send back React's index.html file.
-  app.get('*', (req, res) => {
+  app.get('*', (req, res, next) => {
     if (!req.originalUrl.startsWith('/api')) { // Don't serve index.html for API routes
-        res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+        res.sendFile(path.join(clientBuildPath, 'index.html'));
     } else {
         next(); // Important for API 404s to not be overridden
     }

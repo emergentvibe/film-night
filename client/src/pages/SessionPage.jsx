@@ -49,6 +49,7 @@ export function SessionPage() {
   const [rankedMovies, setRankedMovies] = useState([]);
   const [isRankingLoading, setIsRankingLoading] = useState(false);
   const [rankingError, setRankingError] = useState(null);
+  const [isLinkCopied, setIsLinkCopied] = useState(false);
 
   useEffect(() => {
     // Get or create a unique voter identifier for this browser session
@@ -247,6 +248,19 @@ export function SessionPage() {
     setIsVoting(false);
   };
 
+  const shareableLink = `${window.location.origin}/session/${sessionId}`;
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareableLink);
+      setIsLinkCopied(true);
+      setTimeout(() => setIsLinkCopied(false), 2000); // Reset after 2 seconds
+    } catch (err) {
+      console.error('Failed to copy link: ', err);
+      // Optionally, show an error message to the user
+    }
+  };
+
   if (isLoading && !session) return <div className="container"><p className="info-message">Loading session details...</p></div>;
   if (error) return <div className="container"><p className="error-message">Error: {error}</p></div>;
   if (!session) return <div className="container"><p className="info-message">Session not found or still loading.</p></div>;
@@ -254,7 +268,15 @@ export function SessionPage() {
   return (
     <div className="container">
       <h2>{session.session_name ? session.session_name : `Film Night: ${session.id.substring(0,8)}...`}</h2>
-      <p className="session-link-display">Share this link: {window.location.href}</p>
+      <div className="session-link-container">
+        <label htmlFor="shareableSessionLink" className="session-link-label">Share this link with your friends</label>
+        <div className="session-link-input-group">
+          <span id="shareableSessionLink" className="session-link-text"><strong>{shareableLink}</strong></span>
+          <button onClick={handleCopyLink} className="copy-link-button">
+            {isLinkCopied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+      </div>
       <hr />
       
       <h3>Suggest a Movie</h3>
