@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createSession } from '../services/api';
+import './HomePage.css';
 
 export function HomePage() {
   const [sessionName, setSessionName] = useState('');
@@ -21,45 +22,35 @@ export function HomePage() {
   };
 
   return (
-    <div className="container">
-      <h1>🎬 Film Night Decider 🎬</h1>
-      
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <p style={{ fontSize: '1.1rem', color: '#e0e0e0' }}>
-          Tired of endless "What should we watch?" debates? <br />
-          Let's make choosing a movie fun and democratic!
-        </p>
-      </div>
-
-      <div style={{ backgroundColor: '#424750', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
-        <h2>How It Works:</h2>
-        <ol style={{ paddingLeft: '20px', color: '#d0d0d0' }}>
-          <li style={{ marginBottom: '0.5rem' }}><strong>Start a Session:</strong> Give your film night a name (optional) and hit "Start New Film Night!".</li>
-          <li style={{ marginBottom: '0.5rem' }}><strong>Share the Link:</strong> Copy the unique session link and send it to your friends.</li>
-          <li style={{ marginBottom: '0.5rem' }}><strong>Suggest Movies:</strong> Everyone can add movie suggestions by pasting a URL (we'll try to grab the details!) or entering them manually.</li>
-          <li style={{ marginBottom: '0.5rem' }}><strong>Rank 'Em Up:</strong> Compare movies side-by-side and pick your preference. Each person votes on their own pairs.</li>
-          <li style={{ marginBottom: '0.5rem' }}><strong>See the Winner:</strong> A ranked list appears, updated in real-time, showing which movies are most popular based on everyone's votes.</li>
-        </ol>
-      </div>
-
+    <div className="home-page-container">
       <h2>Create a New Film Night</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem'}}>
+      <div className="create-session-section">
         <input
           type="text"
           placeholder="Optional: Name your session (e.g., Horror Movie Night)"
           value={sessionName}
           onChange={(e) => setSessionName(e.target.value)}
           disabled={isLoading}
-          style={{ width: '100%', maxWidth: '500px' }}
         />
         <button onClick={handleCreateSession} disabled={isLoading}>
           {isLoading ? 'Creating Session...' : '✨ Start New Film Night! ✨'}
         </button>
         {error && <p className="error-message" style={{ marginTop: '1rem' }}>Error: {error}</p>}
       </div>
+      
+      <h2 style={{marginTop: '3rem'}}>How It Works</h2>
+      <div className="how-it-works">
+        <ol>
+          <li><strong>Start a Session:</strong> Give your film night a name (optional) and hit "Start New Film Night!".</li>
+          <li><strong>Share the Link:</strong> Copy the unique session link and send it to your friends.</li>
+          <li><strong>Suggest Movies:</strong> Everyone can add movie suggestions by pasting a URL or entering them manually.</li>
+          <li><strong>Rank 'Em Up:</strong> Compare movies side-by-side and vote for your favorites.</li>
+          <li><strong>See the Winner:</strong> A ranked list appears, updated in real-time, showing the group's top picks.</li>
+        </ol>
+      </div>
 
-      <footer style={{ textAlign: 'center', marginTop: '3rem', fontSize: '0.9rem', color: '#aaa' }}>
-        <p>Happy Watching!</p>
+      <footer className="home-footer">
+        <h3>🍿 Happy Watching! 🍿</h3>
       </footer>
     </div>
   );

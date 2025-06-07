@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
 
-function MovieSubmissionForm({ sessionId, onMovieAdded, setError }) {
+function MovieSubmissionForm({ onMovieAdded, existingMovies }) {
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [year, setYear] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null); // Clear previous errors
+    setError(null);
 
     if (!url && !title) {
-      setError('Please enter a movie URL or a manual title.');
+      setError('Please provide either a movie URL or a title.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (title && existingMovies && existingMovies.includes(title)) {
+      setError(`The movie "${title}" has already been suggested for this session.`);
       setIsLoading(false);
       return;
     }
@@ -24,12 +31,15 @@ function MovieSubmissionForm({ sessionId, onMovieAdded, setError }) {
       if (year) payload.year = year;
       
       await onMovieAdded(payload); 
-      setUrl(''); 
-      setTitle('');
-      setYear('');
-    } catch (error) {
-      console.error('Error submitting movie:', error);
-      setError(error.message || 'Failed to add movie.');
+      
+      // No need to reset fields here, as the modal will close on success
+      // setUrl(''); 
+      // setTitle('');
+      // setYear('');
+
+    } catch (err) {
+      console.error('Error submitting movie:', err);
+      setError(err.response?.data?.error || err.message || 'Failed to add movie.');
     } finally {
       setIsLoading(false);
     }
@@ -37,6 +47,8 @@ function MovieSubmissionForm({ sessionId, onMovieAdded, setError }) {
 
   return (
     <form onSubmit={handleSubmit} className="movie-submission-form">
+      {error && <div className="error-message mb-3">{error}</div>}
+      
       <div className="form-group">
         <label htmlFor="url">Movie URL (e.g., Letterboxd, YouTube):</label>
         <input
@@ -72,7 +84,7 @@ function MovieSubmissionForm({ sessionId, onMovieAdded, setError }) {
         />
       </div>
 
-      <button type="submit" disabled={isLoading} style={{marginTop: '1em'}}>
+      <button type="submit" disabled={isLoading} className="button-primary">
         {isLoading ? 'Adding Movie...' : 'Add Movie'}
       </button>
     </form>

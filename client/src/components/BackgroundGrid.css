@@ -1,0 +1,70 @@
+.background-grid-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden; /* Hide parts of images that go off-screen due to stagger */
+    z-index: -1; /* Changed from -10 to -1 */
+    background-color: #101010; /* Fallback background, very dark */
+
+    display: grid;
+    /* Adjust minmax for desired poster size and responsiveness */
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* INCREASED from 120px */
+    gap: 0; /* Removed gap */
+    padding: 0; /* Removed padding */
+    /* opacity: 0.3; */ /* Removed opacity as per user request */
+    /* Ensure this container can be a positioning context for its pseudo-element */
+    /* position: relative; /* This might not be needed if fixed positioning handles it, but good to keep in mind */
+}
+
+/* Tint overlay */
+.background-grid-container::before {
+    content: '';
+    position: absolute; /* Position relative to the .background-grid-container */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5); /* Adjust opacity (0.0 to 1.0) for desired darkness */
+    z-index: 1; /* Ensure tint is above the images but below main page content */
+}
+
+.background-grid-item {
+    width: 100%;
+    /* overflow: hidden; */ /* REMOVED/COMMENTED OUT: Potential cause of cropping, let's test without it */
+    border-radius: 3px; /* Slight rounding of poster corners */
+    /* Need to ensure items are under the tint overlay */
+    position: relative; /* Or ensure z-index is lower than overlay if direct children */
+    z-index: 0; /* Make sure items are below the ::before pseudo-element of the container */
+}
+
+.background-grid-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover; /* Cover the area, might crop a bit */
+}
+
+/* Staggered effect: apply to items in even columns */
+/* This is a simplified approach. True column-based staggering in CSS grid 
+   without knowing the exact number of columns beforehand is tricky.
+   This will stagger every other item in the flow of the grid items. 
+   For a more robust column stagger, JS might be needed after layout calculation.
+*/
+/* 
+.background-grid-item:nth-child(2n) {
+    margin-top: 30px; 
+}
+*/
+
+/* If you want to attempt column-based stagger, it gets more complex.
+   For example, if you knew you typically had 10 columns:
+.background-grid-item:nth-child(10n + 2),
+.background-grid-item:nth-child(10n + 4),
+.background-grid-item:nth-child(10n + 6),
+.background-grid-item:nth-child(10n + 8),
+.background-grid-item:nth-child(10n + 10) {
+    margin-top: 30px; 
+}
+*/ 

@@ -429,49 +429,41 @@ router.post('/:sessionId/vote', async (req, res) => {
 router.get('/:sessionId/rankings', async (req, res) => {
   const { sessionId } = req.params;
   try {
-    // First, check if the session exists
-    const sessionExists = await db.query('SELECT id FROM sessions WHERE id = $1', [sessionId]);
-    if (sessionExists.rows.length === 0) {
-      return res.status(404).json({ error: 'Session not found.' });
-    }
-
-    // Get all movies for the session
-    const moviesResult = await db.query('SELECT id, title, poster_url, year FROM movies WHERE session_id = $1', [sessionId]);
-    if (moviesResult.rows.length === 0) {
+    // Check if there are at least two movies to prevent SQL errors on empty sets
+    const movieCountResult = await db.query('SELECT COUNT(*) FROM movies WHERE session_id = $1', [sessionId]);
+    const movieCount = parseInt(movieCountResult.rows[0].count, 10);
+    if (movieCount < 1) {
       return res.json([]); // No movies, no rankings
     }
-    const movies = moviesResult.rows;
 
-    // Get all votes for the session
-    const votesResult = await db.query('SELECT winner_id FROM votes WHERE session_id = $1 AND winner_id IS NOT NULL', [sessionId]);
-    const votes = votesResult.rows;
+    // This query calculates the number of "wins" for each movie
+    const rankingsResult = await db.query(`
+      SELECT
+        m.id,
+        m.title,
+        m.year,
+        m.director,
+        m.runtime,
+        m.rating,
+        m.genres,
+        m.synopsis,
+        m.poster_url,
+        m.trailer_url,
+        COALESCE(v.wins, 0) as wins
+      FROM movies m
+      LEFT JOIN (
+        SELECT
+          winner_id,
+          COUNT(*) as wins
+        FROM votes
+        WHERE session_id = $1
+        GROUP BY winner_id
+      ) v ON m.id = v.winner_id
+      WHERE m.session_id = $1
+      ORDER BY wins DESC, m.title ASC;
+    `, [sessionId]);
 
-    // Calculate wins for each movie
-    const movieWins = {};
-    movies.forEach(movie => {
-      movieWins[movie.id] = 0; // Initialize wins for all movies in the session
-    });
-
-    votes.forEach(vote => {
-      if (vote.winner_id && movieWins.hasOwnProperty(vote.winner_id)) {
-        movieWins[vote.winner_id]++;
-      }
-    });
-
-    // Create ranked list
-    const rankedMovies = movies.map(movie => ({
-      ...movie, // id, title, poster_url, year
-      wins: movieWins[movie.id] || 0,
-    })).sort((a, b) => {
-      // Sort by wins descending. If wins are equal, sort by title ascending as a tie-breaker.
-      if (b.wins !== a.wins) {
-        return b.wins - a.wins;
-      }
-      return a.title.localeCompare(b.title);
-    });
-
-    res.json(rankedMovies);
-
+    res.json(rankingsResult.rows);
   } catch (error) {
     console.error('Error calculating rankings:', error);
     res.status(500).json({ error: 'Failed to calculate rankings', details: error.message });
