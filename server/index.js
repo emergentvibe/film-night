@@ -21,22 +21,15 @@ app.use('/api/sessions', (req, res, next) => {
   next();
 });
 
-// Serve static files from the React app in production
-if (process.env.NODE_ENV === 'production') {
-  // Corrected path: ./client/dist relative to server/index.js
-  const clientBuildPath = path.join(__dirname, 'client/dist');
-  app.use(express.static(clientBuildPath));
+// Serve static files from the React app build directory
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
 
-  // The "catchall" handler: for any request that doesn't
-  // match one above, send back React's index.html file.
-  app.get('*', (req, res, next) => {
-    if (!req.originalUrl.startsWith('/api')) { // Don't serve index.html for API routes
-        res.sendFile(path.join(clientBuildPath, 'index.html'));
-    } else {
-        next(); // Important for API 404s to not be overridden
-    }
-  });
-}
+// The "catchall" handler: for any request that doesn't match one above,
+// send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
 
 app.get('/api', (req, res) => { // Changed base API check to /api
   res.send('Film Night API is running!');

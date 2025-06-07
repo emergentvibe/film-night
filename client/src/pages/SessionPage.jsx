@@ -196,7 +196,10 @@ export function SessionPage() {
   const handleMovieAdded = async (movieData) => {
     try {
       await addMovieToSession(sessionId, movieData);
-      fetchDetails(true);
+      // We don't need to manually refetch, the effect below will handle it
+      // when `session` state changes after a new movie is added.
+      // For a more immediate feeling, we can trigger it manually.
+      await fetchDetails(true);
     } catch (err) {
       console.error('Error in handleMovieAdded:', err);
       throw err;
@@ -276,6 +279,7 @@ export function SessionPage() {
     }
   };
 
+  // Corrected Loading and Error State Handling
   if (isLoading) {
     return <div style={{ textAlign: 'center', marginTop: '50px' }}>🌀 Loading session...</div>;
   }
@@ -284,6 +288,7 @@ export function SessionPage() {
     return <div className="error-message">Error: {error}</div>;
   }
 
+  // Fallback if session is still null after loading and no error.
   if (!session) {
     return <div style={{ textAlign: 'center', marginTop: '50px' }}>Session not found.</div>;
   }
@@ -313,7 +318,7 @@ export function SessionPage() {
         <MovieSubmissionForm
           sessionId={sessionId}
           onMovieAdded={handleMovieAddedAndCloseModal}
-          existingMovies={session.movies.map(m => m.title)}
+          existingMovies={session.movies ? session.movies.map(m => m.title) : []}
         />
       </Modal>
 
@@ -327,7 +332,7 @@ export function SessionPage() {
             Recording Vote...
           </div>
           
-          {session.movies.length < 2 && (
+          {(!session.movies || session.movies.length < 2) && (
              <p style={{textAlign: 'center'}}>Add at least two movies to start voting.</p>
           )}
 
@@ -344,7 +349,7 @@ export function SessionPage() {
             </div>
           )}
 
-          {!isVoting && allPairsVotedForCurrentUser && session.movies.length >= 2 && (
+          {!isVoting && allPairsVotedForCurrentUser && session.movies && session.movies.length >= 2 && (
             <div className="voting-complete">
               <h4>🎉 You've voted on all available pairs!</h4>
               <p>The final rankings are below. If more movies are added, new voting pairs will appear here.</p>
@@ -365,10 +370,10 @@ export function SessionPage() {
             ))}
           </ol>
         )}
-        {!isRankingLoading && rankedMovies.length === 0 && session.movies.length > 0 && (
+        {!isRankingLoading && rankedMovies.length === 0 && session.movies && session.movies.length > 0 && (
           <p>Rankings will appear here after some votes have been cast.</p>
         )}
-        {!isRankingLoading && session.movies.length === 0 && (
+        {!isRankingLoading && (!session.movies || session.movies.length === 0) && (
            <div className="no-movies-message">No movies suggested yet. Add one to get started!</div>
         )}
       </div>
