@@ -14,8 +14,13 @@ function MovieItem({ movie, onDelete }) {
 
   return (
     <li className="movie-item">
-      <div className="image-container">
-        {movie.poster_url && <img src={movie.poster_url} alt={`${movie.title} poster`} />}
+      <div className="poster-column">
+        <div className="image-container">
+          {movie.poster_url && <img src={movie.poster_url} alt={`${movie.title} poster`} />}
+        </div>
+        <div className="wins-badge">
+          {movie.wins} Win{movie.wins === 1 ? '' : 's'}
+        </div>
       </div>
       <div className="movie-details">
         <div className="movie-title-bar">
@@ -196,10 +201,7 @@ export function SessionPage() {
   const handleMovieAdded = async (movieData) => {
     try {
       await addMovieToSession(sessionId, movieData);
-      // We don't need to manually refetch, the effect below will handle it
-      // when `session` state changes after a new movie is added.
-      // For a more immediate feeling, we can trigger it manually.
-      await fetchDetails(true);
+      fetchDetails(true);
     } catch (err) {
       console.error('Error in handleMovieAdded:', err);
       throw err;
@@ -296,7 +298,7 @@ export function SessionPage() {
   return (
     <div className="session-page">
       <header className="session-header">
-        <h2>{session.name}</h2>
+        <h1>{session.name || 'Voteflix Session'}</h1>
         <div className="session-header-actions">
            <button onClick={() => setIsModalOpen(true)} className="button-primary">
             Suggest a Movie

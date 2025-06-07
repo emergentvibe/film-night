@@ -11,6 +11,7 @@ primary_region = 'lhr'
 # Explicitly set the PORT environment variable for the application runtime
 [env]
   PORT = "8080"
+  NODE_ENV = 'production'
 
 [http_service]
   internal_port = 8080

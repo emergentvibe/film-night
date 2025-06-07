@@ -162,7 +162,23 @@ router.get('/:sessionId', async (req, res) => {
     const session = sessionResult.rows[0];
 
     const moviesResult = await db.query('SELECT * FROM movies WHERE session_id = $1 ORDER BY added_at ASC', [sessionId]);
-    session.movies = moviesResult.rows;
+    
+    // Parse genres from JSON string to array for each movie
+    const movies = moviesResult.rows.map(movie => {
+      try {
+        // The genres field might be a JSON string, null, or already an object/array
+        // depending on db driver and history. This makes it robust.
+        if (typeof movie.genres === 'string') {
+          return { ...movie, genres: JSON.parse(movie.genres) };
+        }
+        return movie;
+      } catch (e) {
+        console.error(`Failed to parse genres for movie ${movie.id}:`, movie.genres, e);
+        return { ...movie, genres: [] }; // Gracefully handle malformed data
+      }
+    });
+
+    session.movies = movies;
 
     // Fetch unique pairs that have been globally voted on for this session
     const globallyVotedPairsResult = await db.query(
@@ -208,6 +224,20 @@ router.post('/:sessionId/movies', async (req, res) => {
     return res.status(400).json({ error: 'A movie URL or a manual title is required.' });
   }
 
+  // Check if movie already exists by title in this session
+  try {
+    const existingMovieCheck = await db.query(
+      'SELECT id FROM movies WHERE session_id = $1 AND lower(title) = lower($2)',
+      [sessionId, manualTitle]
+    );
+    if (existingMovieCheck.rows.length > 0) {
+      return res.status(409).json({ error: `Movie "${manualTitle}" has already been suggested.` });
+    }
+  } catch (dbError) {
+    console.error('DB Error checking for existing movie:', dbError);
+    return res.status(500).json({ error: 'Database error while checking for existing movie.' });
+  }
+  
   let movieDetails = {
     title: manualTitle, // Initialize with manual title if provided
     year: manualYear,   // Initialize with manual year if provided
@@ -216,78 +246,81 @@ router.post('/:sessionId/movies', async (req, res) => {
     genres,
     synopsis,
     poster_url,
-    rating
+    rating: rating
   };
+
+  let searchTitle = manualTitle;
+  let searchYear = manualYear;
 
   if (url) {
     try {
-      console.log(`[MovieAdd] Processing URL: ${url}`);
-      const html = await axios.get(url, { 
-        timeout: 15000,
-        headers: { 'User-Agent': 'Voteflix/1.0' }
-      });
+      const html = await axios.get(url, { timeout: 10000 });
       const unfluffData = unfluff(html.data);
       
+      let aiExtractedInfo = null;
       const titleForAI = unfluffData.softTitle || unfluffData.title;
+      const descriptionForAI = unfluffData.description;
+      const dateHintForAI = unfluffData.date;
+
       if (titleForAI) {
-        console.log(`[MovieAdd] Title found for AI processing: "${titleForAI}"`);
-        const aiExtractedInfo = await getMovieTitleFromAI({ title: titleForAI, description: unfluffData.description, date: unfluffData.date });
-        if (aiExtractedInfo && aiExtractedInfo.title) {
-          movieDetails.title = aiExtractedInfo.title;
-          movieDetails.year = aiExtractedInfo.year || movieDetails.year; // Prioritize AI year but keep manual if AI has none
+        aiExtractedInfo = await getMovieTitleFromAI({ title: titleForAI, description: descriptionForAI, date: dateHintForAI });
+      }
+
+      if (aiExtractedInfo && aiExtractedInfo.title) {
+        searchTitle = aiExtractedInfo.title;
+        if (aiExtractedInfo.year) {
+            searchYear = aiExtractedInfo.year;
         }
       }
+    } catch (error) {
+      console.error('Error during URL processing. Will proceed with manual data. Error:', error);
+    }
+  } else {
+    console.log('[MOVIE_ADD_DEBUG] No URL provided. Using manually entered title for TMDB search.');
+  }
 
-      const searchTitle = movieDetails.title || manualTitle || unfluffData.title;
-      const searchYear = movieDetails.year || manualYear;
-
-      if (!searchTitle) {
-        console.error("[MovieAdd] Could not determine a title from URL or manual input after processing.");
-        return res.status(400).json({ error: 'Could not determine a movie title from the provided URL.' });
-      }
-
-      console.log(`[MovieAdd] Searching TMDB for Title: "${searchTitle}", Year: ${searchYear}`);
+  // If we have a title to search for (from manual input or URL processing), use TMDB
+  if (searchTitle) {
+    try {
       const tmdbDetails = await getMovieDetailsFromTMDB(searchTitle, searchYear);
 
-      // Merge TMDB details, but give priority to already set details if they exist
-      movieDetails = { ...tmdbDetails, ...movieDetails };
-
+      if (tmdbDetails) {
+        // We merge TMDB details. This enriches the manual data.
+        movieDetails = {
+          ...movieDetails, // Keeps manual data as a fallback
+          ...tmdbDetails   // Overwrites with richer TMDB data
+        };
+      }
     } catch (error) {
-      console.error('[MovieAdd] CRITICAL: Failed to process movie URL. The error could be due to a failed network request, an API key issue, or a timeout.', error);
-      // This is the crucial fix: send a response and stop execution.
-      return res.status(500).json({ 
-        error: 'Failed to get movie details from the provided URL. The service may be down or the URL may be invalid.',
-        details: error.message 
-      });
+      console.error('Error during TMDB call:', error);
     }
   }
 
-  // After processing URL (or if only manual details were given), validate we have a title.
-  if (!movieDetails.title) {
-    return res.status(400).json({ error: 'Could not determine movie title from the provided URL or manual input.' });
-  }
-
-  const dbYear = (movieDetails.year === '' || movieDetails.year === null || isNaN(parseInt(movieDetails.year))) ? null : parseInt(movieDetails.year);
-
+  // At this point, movieDetails contains the best information we could gather.
+  // Now, we insert it into the database.
   try {
-    const sessionExists = await db.query('SELECT id FROM sessions WHERE id = $1', [sessionId]);
-    if (sessionExists.rows.length === 0) {
-      return res.status(404).json({ error: 'Session not found' });
-    }
-
     const result = await db.query(
-      `INSERT INTO movies 
-       (session_id, title, year, director, runtime, genres, synopsis, poster_url, rating, tmdb_id, trailer_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-      [sessionId, movieDetails.title, dbYear, movieDetails.director, movieDetails.runtime, movieDetails.genres, movieDetails.synopsis, movieDetails.poster_url, movieDetails.rating, movieDetails.tmdbId, movieDetails.trailer_url]
+      `INSERT INTO movies (session_id, title, year, director, runtime, genres, synopsis, poster_url, rating, trailer_url, tmdb_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING *`,
+      [
+        sessionId,
+        movieDetails.title,
+        movieDetails.year || null,
+        movieDetails.director,
+        movieDetails.runtime,
+        movieDetails.genres || null,
+        movieDetails.synopsis,
+        movieDetails.poster_url,
+        movieDetails.rating,
+        movieDetails.trailer_url,
+        movieDetails.tmdbId || null,
+      ]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Error adding movie to session:', error);
-    if (error.code === '23503') {
-      return res.status(404).json({ error: 'Session not found for movie.', details: error.message });
-    }
-    res.status(500).json({ error: 'Failed to add movie', details: error.message });
+    console.error('CRITICAL: Failed to insert movie into database:', error);
+    res.status(500).json({ error: 'Failed to save movie to database', details: error.message });
   }
 });
 

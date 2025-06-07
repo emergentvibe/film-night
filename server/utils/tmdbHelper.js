@@ -20,7 +20,6 @@ async function getMovieDetailsFromTMDB(titleToSearch, yearToSearch = null) {
     console.warn('TMDB_API_KEY not found. Skipping TMDB lookup.');
     return null;
   }
-  console.log(`[TMDB] Attempting search for title: "${titleToSearch}", year: ${yearToSearch}`);
 
   try {
     const searchUrl = `${TMDB_BASE_URL}/search/movie`;
@@ -32,7 +31,6 @@ async function getMovieDetailsFromTMDB(titleToSearch, yearToSearch = null) {
     let searchResponse = await axios.get(searchUrl, { params: searchParams });
 
     if ((!searchResponse.data || !searchResponse.data.results || searchResponse.data.results.length === 0) && yearToSearch) {
-      console.log(`[TMDB] No results with year ${yearToSearch}. Retrying search for "${titleToSearch}" without year.`);
       const fallbackParams = { api_key: TMDB_API_KEY, query: titleToSearch };
       searchResponse = await axios.get(searchUrl, { params: fallbackParams });
     }
@@ -54,21 +52,12 @@ async function getMovieDetailsFromTMDB(titleToSearch, yearToSearch = null) {
         return null; // Exit if detail fetch fails
       }
       
-      // Log keys immediately after the response is received
       if (detailResponse && detailResponse.data) {
       } else {
-        console.log('[TMDB] detailResponse or detailResponse.data is missing after fetch.');
         return null; // Exit if no data
       }
 
       const tmdbMovie = detailResponse.data;
-      console.log('[TMDB] Detailed movie data fetched for ID:', movieId);
-
-      // Log the raw videos object from TMDB
-      if (tmdbMovie.videos) {
-      } else {
-        console.log('[TMDB] No video data object in TMDB response.');
-      }
 
       let director = null;
       if (tmdbMovie.credits && tmdbMovie.credits.crew) {
@@ -93,7 +82,7 @@ async function getMovieDetailsFromTMDB(titleToSearch, yearToSearch = null) {
         }
       }
 
-      return {
+      const formattedDetails = {
         title: tmdbMovie.title,
         poster_url: tmdbMovie.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbMovie.poster_path}` : null,
         synopsis: tmdbMovie.overview,
@@ -105,8 +94,9 @@ async function getMovieDetailsFromTMDB(titleToSearch, yearToSearch = null) {
         tmdbId: tmdbMovie.id,
         trailer_url: trailerUrl
       };
+
+      return formattedDetails;
     }
-    console.log(`[TMDB] No definitive results from TMDB for: "${titleToSearch}", year: ${yearToSearch}`);
     return null;
   } catch (error) {
     console.error('[TMDB] Error fetching data from TMDB:', error.response ? error.response.data : error.message);
