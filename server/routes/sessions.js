@@ -139,7 +139,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({
       sessionId: newSession.id,
-      sessionName: newSession.session_name,
+      name: newSession.session_name,
       createdAt: newSession.created_at,
       shareableLink: shareableLink // This link is conceptual for now
     });
@@ -159,7 +159,7 @@ router.get('/:sessionId', async (req, res) => {
     if (sessionResult.rows.length === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
-    const session = sessionResult.rows[0];
+    const sessionFromDb = sessionResult.rows[0];
 
     const moviesResult = await db.query('SELECT * FROM movies WHERE session_id = $1 ORDER BY added_at ASC', [sessionId]);
     
@@ -178,7 +178,14 @@ router.get('/:sessionId', async (req, res) => {
       }
     });
 
-    session.movies = movies;
+    // Construct the session object for the client, mapping db keys to camelCase keys
+    const sessionForClient = {
+      id: sessionFromDb.id,
+      name: sessionFromDb.session_name,
+      createdAt: sessionFromDb.created_at,
+      movies: movies,
+      // The rest of the properties are calculated below and can be added directly
+    };
 
     // Fetch unique pairs that have been globally voted on for this session
     const globallyVotedPairsResult = await db.query(
@@ -189,10 +196,10 @@ router.get('/:sessionId', async (req, res) => {
        WHERE session_id = $1`,
       [sessionId]
     );
-    session.globally_voted_pairs = globallyVotedPairsResult.rows.map(pair => `${pair.movie1_id}_${pair.movie2_id}`);
+    sessionForClient.globally_voted_pairs = globallyVotedPairsResult.rows.map(pair => `${pair.movie1_id}_${pair.movie2_id}`);
 
     // Fetch unique pairs voted on by the specific voterIdentifier, if provided
-    session.user_voted_pairs = []; // Initialize as empty
+    sessionForClient.user_voted_pairs = []; // Initialize as empty
     if (voterIdentifier) {
       const userVotedPairsResult = await db.query(
         `SELECT DISTINCT 
@@ -202,12 +209,12 @@ router.get('/:sessionId', async (req, res) => {
          WHERE session_id = $1 AND voter_identifier = $2`,
         [sessionId, voterIdentifier]
       );
-      session.user_voted_pairs = userVotedPairsResult.rows.map(pair => `${pair.movie1_id}_${pair.movie2_id}`);
+      sessionForClient.user_voted_pairs = userVotedPairsResult.rows.map(pair => `${pair.movie1_id}_${pair.movie2_id}`);
     }
 
-    session.rankings = []; // Placeholder for now
+    sessionForClient.rankings = []; // Placeholder for now
 
-    res.json(session);
+    res.json(sessionForClient);
   } catch (error) {
     console.error('Error fetching session:', error);
     res.status(500).json({ error: 'Failed to fetch session', details: error.message });

@@ -10,7 +10,7 @@ const API_BASE_URL = '/api'; // Proxied by Vite
 export const createSession = async (sessionName = null) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/sessions`, { sessionName });
-    return response.data; // Expected: { sessionId, sessionName, createdAt, shareableLink }
+    return response.data; // Expected: { sessionId, name, createdAt, shareableLink }
   } catch (error) {
     console.error('Error creating session:', error.response ? error.response.data : error.message);
     throw error; // Re-throw to be caught by the calling component
