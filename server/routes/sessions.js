@@ -221,103 +221,48 @@ router.post('/:sessionId/movies', async (req, res) => {
 
   if (url) {
     try {
-      const html = await axios.get(url, { timeout: 10000 });
+      console.log(`[MovieAdd] Processing URL: ${url}`);
+      const html = await axios.get(url, { 
+        timeout: 15000,
+        headers: { 'User-Agent': 'Voteflix/1.0' }
+      });
       const unfluffData = unfluff(html.data);
-      // console.log('Full unfluffData:', JSON.stringify(unfluffData, null, 2)); // Removed verbose log
-
-      // Attempt to get a more canonical title using AI
-      let aiExtractedInfo = null;
+      
       const titleForAI = unfluffData.softTitle || unfluffData.title;
-      const descriptionForAI = unfluffData.description;
-      const dateHintForAI = unfluffData.date;
-
       if (titleForAI) {
-        console.log(`Title for AI: ${titleForAI}, Description: ${descriptionForAI}, Date hint: ${dateHintForAI}`);
-        aiExtractedInfo = await getMovieTitleFromAI({ title: titleForAI, description: descriptionForAI, date: dateHintForAI });
-      }
-
-      // Prioritize AI-extracted info, then unfluff, then manual (if URL was the primary source)
-      let searchTitle = manualTitle; // Start with manual title as a base or override
-      let searchYear = manualYear;   // Start with manual year
-
-      if (aiExtractedInfo && aiExtractedInfo.title) {
-        console.log(`AI extracted title: ${aiExtractedInfo.title}, year: ${aiExtractedInfo.year}`);
-        searchTitle = aiExtractedInfo.title; // AI overrides if it found a title
-        if (aiExtractedInfo.year) {
-            searchYear = aiExtractedInfo.year; // AI year overrides
-        } else if (manualYear) {
-            // Keep manual year if AI didn't find one
-        } else {
-            searchYear = null; // No year from AI or manual
-        }
-      } else if (unfluffData.title && !manualTitle) { // If no AI result & no manual title, use unfluff's primary title
-        searchTitle = unfluffData.title; 
-        // If unfluff has a date, and we don't have a more specific year, consider it.
-        if (unfluffData.date && !searchYear) {
-            const parsedUnfluffYear = parseInt(unfluffData.date);
-            if (!isNaN(parsedUnfluffYear)) searchYear = parsedUnfluffYear;
+        console.log(`[MovieAdd] Title found for AI processing: "${titleForAI}"`);
+        const aiExtractedInfo = await getMovieTitleFromAI({ title: titleForAI, description: unfluffData.description, date: unfluffData.date });
+        if (aiExtractedInfo && aiExtractedInfo.title) {
+          movieDetails.title = aiExtractedInfo.title;
+          movieDetails.year = aiExtractedInfo.year || movieDetails.year; // Prioritize AI year but keep manual if AI has none
         }
       }
-      // If still no searchTitle, but we had a manualTitle, it remains the searchTitle.
-      // If there was a URL but no title could be derived from unfluff/AI, and no manual title, this path might result in an error later.
 
-      if (searchTitle) {
-        movieDetails.title = searchTitle;
-        if (searchYear !== undefined) movieDetails.year = searchYear; // Ensure year is explicitly set
+      const searchTitle = movieDetails.title || manualTitle || unfluffData.title;
+      const searchYear = movieDetails.year || manualYear;
 
-        const { title: parsedTitleForTMDB, year: yearFromParsedTitle } = parseTitleAndYear(searchTitle);
-        const yearForTMDB = searchYear || yearFromParsedTitle; // Prioritize explicit searchYear
-
-        const tmdbDetails = await getMovieDetailsFromTMDB(parsedTitleForTMDB, yearForTMDB);
-        if (tmdbDetails) {
-          movieDetails = { ...movieDetails, ...tmdbDetails };
-        } else {
-          // Fallback to unfluff data if TMDB fails or no title for TMDB
-          if (!movieDetails.title && unfluffData.title) movieDetails.title = unfluffData.title;
-          if (!movieDetails.poster_url && unfluffData.image) movieDetails.poster_url = unfluffData.image;
-          if (!movieDetails.synopsis && unfluffData.description) movieDetails.synopsis = unfluffData.description;
-        }
-      } else {
-        // If no search title could be determined (no manual, no unfluff, no AI)
-        // We might still have manual details for other fields, so retain them.
-        // This branch is less likely if manual title is mandatory when no URL
+      if (!searchTitle) {
+        console.error("[MovieAdd] Could not determine a title from URL or manual input after processing.");
+        return res.status(400).json({ error: 'Could not determine a movie title from the provided URL.' });
       }
+
+      console.log(`[MovieAdd] Searching TMDB for Title: "${searchTitle}", Year: ${searchYear}`);
+      const tmdbDetails = await getMovieDetailsFromTMDB(searchTitle, searchYear);
+
+      // Merge TMDB details, but give priority to already set details if they exist
+      movieDetails = { ...tmdbDetails, ...movieDetails };
 
     } catch (error) {
-      console.error('Error fetching or processing URL:', error.message);
-      // Decide if we should proceed with manual data or return error
-      // For now, if URL processing fails, we'll rely on any manual data provided
-      if (!manualTitle && !movieDetails.title) { // If no manual title and URL processing failed to yield a title
-        return res.status(400).json({ error: 'Failed to fetch movie data from URL and no manual title provided.' });
-      }
+      console.error('[MovieAdd] CRITICAL: Failed to process movie URL. The error could be due to a failed network request, an API key issue, or a timeout.', error);
+      // This is the crucial fix: send a response and stop execution.
+      return res.status(500).json({ 
+        error: 'Failed to get movie details from the provided URL. The service may be down or the URL may be invalid.',
+        details: error.message 
+      });
     }
-  } else if (!manualTitle) {
-    // This case should be caught by the initial check (!url && !manualTitle)
-    // but as a safeguard:
-    return res.status(400).json({ error: 'A movie title is required if no URL is provided.' });
-  }
-  // If only manual data was provided (no URL), movieDetails already has them.
-  // We still attempt a TMDB lookup if we have a title.
-  if (!url && manualTitle) {
-      const { title: parsedManualTitle, year: yearFromManualTitleString } = parseTitleAndYear(manualTitle);
-      const yearForTMDBLookup = manualYear || yearFromManualTitleString;
-      const tmdbDetails = await getMovieDetailsFromTMDB(parsedManualTitle, yearForTMDBLookup);
-      if (tmdbDetails) {
-          // Use spread operator to correctly merge all fields from tmdbDetails,
-          // including trailer_url, while allowing initial manual values as fallbacks.
-          movieDetails = {
-              ...movieDetails, // Keeps initial manual director, runtime, etc., if not in tmdbDetails
-              ...tmdbDetails   // Overwrites with TMDB data where available (title, year, poster, TRAILER, etc.)
-          };
-          // Ensure manual title/year are used if TMDB didn't provide them or if you want to prioritize manual override
-          // For now, TMDB data takes precedence if tmdbDetails has a field.
-          if (manualTitle && !tmdbDetails.title) movieDetails.title = manualTitle;
-          if (manualYear && tmdbDetails.year === null) movieDetails.year = manualYear; 
-
-      }
   }
 
-  // Final check: if after all processing, we still don't have a title, it's an error.
+  // After processing URL (or if only manual details were given), validate we have a title.
   if (!movieDetails.title) {
     return res.status(400).json({ error: 'Could not determine movie title from the provided URL or manual input.' });
   }

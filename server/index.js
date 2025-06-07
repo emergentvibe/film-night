@@ -4,12 +4,34 @@ const express = require('express');
 const path = require('path'); // Added for serving static files
 const db = require('./db'); // Import the db module to initialize the pool connection
 const sessionsRouter = require('./routes/sessions');
+const cors = require('cors');
 
 const app = express();
 // Use environment variable for port or default to 3001. 
 // Fly.io will set the PORT environment variable.
 const port = process.env.PORT || 3001; 
 
+// --- Startup Environment Variable Check ---
+// Essential for production debugging.
+const requiredEnvVars = ['DATABASE_URL', 'TMDB_API_KEY', 'ANTHROPIC_API_KEY'];
+let missingVars = false;
+requiredEnvVars.forEach(varName => {
+  if (!process.env[varName]) {
+    console.error(`[Startup Error] Missing required environment variable: ${varName}`);
+    missingVars = true;
+  }
+});
+
+if (missingVars) {
+  console.error("One or more required environment variables are missing. The application may not function correctly.");
+  // In a stricter setup, you might want to exit here:
+  // process.exit(1);
+} else {
+  console.log("[Startup] All required environment variables are present.");
+}
+// --- End Check ---
+
+app.use(cors());
 app.use(express.json()); // Middleware to parse JSON bodies
 
 // Logging middleware (can be refined or removed for production)
