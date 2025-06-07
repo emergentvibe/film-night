@@ -492,4 +492,27 @@
     align-items: flex-start;
     gap: 0.5rem;
   }
+}
+
+.watch-providers {
+  margin-top: 15px;
+}
+
+.watch-providers p {
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.provider-logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.provider-logos .provider-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background-color: #fff; /* In case of transparent logos */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 } 

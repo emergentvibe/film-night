@@ -15,7 +15,7 @@ function parseTitleAndYear(inputTitle) {
 }
 
 // Helper function to search TMDB and get movie details
-async function getMovieDetailsFromTMDB(titleToSearch, yearToSearch = null) {
+async function getMovieDetailsFromTMDB(titleToSearch, yearToSearch = null, watchRegion = 'US') {
   if (!TMDB_API_KEY) {
     console.warn('TMDB_API_KEY not found. Skipping TMDB lookup.');
     return null;
@@ -39,7 +39,7 @@ async function getMovieDetailsFromTMDB(titleToSearch, yearToSearch = null) {
       const movieId = searchResponse.data.results[0].id;
       
       const detailUrl = `${TMDB_BASE_URL}/movie/${movieId}`;
-      const detailParams = { api_key: TMDB_API_KEY, append_to_response: 'credits,videos' }; 
+      const detailParams = { api_key: TMDB_API_KEY, append_to_response: 'credits,videos,watch/providers' }; 
       let detailResponse;
       try {
         detailResponse = await axios.get(detailUrl, { params: detailParams });
@@ -82,6 +82,18 @@ async function getMovieDetailsFromTMDB(titleToSearch, yearToSearch = null) {
         }
       }
 
+      let watchProviders = [];
+      if (tmdbMovie['watch/providers'] && tmdbMovie['watch/providers'].results && tmdbMovie['watch/providers'].results[watchRegion]) {
+        const regionalProviders = tmdbMovie['watch/providers'].results[watchRegion];
+        if (regionalProviders.flatrate) {
+          watchProviders = regionalProviders.flatrate.map(p => ({
+            provider_id: p.provider_id,
+            provider_name: p.provider_name,
+            logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}`
+          }));
+        }
+      }
+
       const formattedDetails = {
         title: tmdbMovie.title,
         poster_url: tmdbMovie.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbMovie.poster_path}` : null,
@@ -92,7 +104,8 @@ async function getMovieDetailsFromTMDB(titleToSearch, yearToSearch = null) {
         runtime: tmdbMovie.runtime ? `${tmdbMovie.runtime} min` : null,
         rating: tmdbMovie.vote_average ? `${tmdbMovie.vote_average.toFixed(1)}/10 (TMDB)` : null,
         tmdbId: tmdbMovie.id,
-        trailer_url: trailerUrl
+        trailer_url: trailerUrl,
+        watch_providers: watchProviders,
       };
 
       return formattedDetails;

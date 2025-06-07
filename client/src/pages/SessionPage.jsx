@@ -46,6 +46,23 @@ function MovieItem({ movie, onDelete }) {
         <p><strong>Genres:</strong> {movie.genres && movie.genres.length > 0 ? movie.genres.join(', ') : 'N/A'}</p>
         
         {movie.synopsis && <p className="synopsis">{movie.synopsis}</p>}
+        
+        {movie.watch_providers && movie.watch_providers.length > 0 && (
+          <div className="watch-providers">
+            <p><strong>Available on:</strong></p>
+            <div className="provider-logos">
+              {movie.watch_providers.map(provider => (
+                <img 
+                  key={provider.provider_id}
+                  src={provider.logo_path}
+                  alt={provider.provider_name}
+                  title={provider.provider_name}
+                  className="provider-logo"
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <button 
         onClick={() => onDelete(movie.id)}

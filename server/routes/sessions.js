@@ -289,7 +289,9 @@ router.post('/:sessionId/movies', async (req, res) => {
   // If we have a title to search for (from manual input or URL processing), use TMDB
   if (searchTitle) {
     try {
-      const tmdbDetails = await getMovieDetailsFromTMDB(searchTitle, searchYear);
+      // Get the user's country from the fly-country header, default to 'GB' for local dev
+      const watchRegion = req.headers['fly-country'] || 'GB';
+      const tmdbDetails = await getMovieDetailsFromTMDB(searchTitle, searchYear, watchRegion);
 
       if (tmdbDetails) {
         // We merge TMDB details. This enriches the manual data.
@@ -307,8 +309,8 @@ router.post('/:sessionId/movies', async (req, res) => {
   // Now, we insert it into the database.
   try {
     const result = await db.query(
-      `INSERT INTO movies (session_id, title, year, director, runtime, genres, synopsis, poster_url, rating, trailer_url, tmdb_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO movies (session_id, title, year, director, runtime, genres, synopsis, poster_url, rating, trailer_url, tmdb_id, watch_providers)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         sessionId,
@@ -322,6 +324,7 @@ router.post('/:sessionId/movies', async (req, res) => {
         movieDetails.rating,
         movieDetails.trailer_url,
         movieDetails.tmdbId || null,
+        movieDetails.watch_providers ? JSON.stringify(movieDetails.watch_providers) : null,
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -434,6 +437,7 @@ router.get('/:sessionId/rankings', async (req, res) => {
         m.synopsis,
         m.poster_url,
         m.trailer_url,
+        m.watch_providers,
         COALESCE(v.wins, 0) as wins
       FROM movies m
       LEFT JOIN (
