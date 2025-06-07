@@ -125,10 +125,11 @@ If you find a title but no year, return {"title": "Found Title", "year": null}.`
 // POST /api/sessions - Create a new film night session
 router.post('/', async (req, res) => {
   const { sessionName } = req.body; // Optional sessionName from request
+  const finalSessionName = sessionName || 'Film Night Session'; // Provide a default
   try {
     const result = await db.query(
       'INSERT INTO sessions (session_name) VALUES ($1) RETURNING id, session_name, created_at',
-      [sessionName]
+      [finalSessionName]
     );
     const newSession = result.rows[0];
     // Construct the shareable link (adjust base URL as needed for frontend)
@@ -324,7 +325,9 @@ router.post('/:sessionId/movies', async (req, res) => {
         movieDetails.rating,
         movieDetails.trailer_url,
         movieDetails.tmdbId || null,
-        movieDetails.watch_providers ? JSON.stringify(movieDetails.watch_providers) : null,
+        movieDetails.watch_providers && typeof movieDetails.watch_providers === 'object' 
+          ? JSON.stringify(movieDetails.watch_providers) 
+          : movieDetails.watch_providers,
       ]
     );
     res.status(201).json(result.rows[0]);

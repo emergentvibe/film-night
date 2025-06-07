@@ -146,4 +146,11 @@ client/.env
 client/.env.*
 
 # Mac specific
-.DS_Store 
+.DS_Store
+
+# Local environment variables
+.env
+server/.env
+
+# Deployment notes
+deployment_notes.md 

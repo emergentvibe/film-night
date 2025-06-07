@@ -1,27 +1,34 @@
 const { Pool } = require('pg');
+const path = require('path');
 
 let pool;
 
 if (process.env.DATABASE_URL) {
-  pool = new Pool({
+  // This block will be used by Fly.io production, which sets DATABASE_URL directly.
+  const config = {
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false // Required for Fly.io and Heroku Postgres connections
-    }
-  });
-  console.log('Connecting to database using DATABASE_URL.');
+  };
+  // The host override is not needed here because we are not using the proxy.
+  pool = new Pool(config);
+  console.log('Connecting to database using DATABASE_URL from environment.');
 } else {
-  pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
-    // Optional: add connection timeout, max connections, etc.
-    // connectionTimeoutMillis: 2000,
-    // max: 20, 
-  });
-  console.log('Connecting to database using individual DB_USER/DB_HOST etc. variables.');
+  // This block will be used for local development.
+  // We explicitly load the .env file from the 'server' directory.
+  require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+  
+  const config = {
+    connectionString: process.env.DATABASE_URL,
+  };
+
+  // When running locally via `flyctl proxy`, the DB is at 127.0.0.1.
+  // The hostname in DATABASE_URL is 'localhost', which on some systems
+  // resolves to the IPv6 address '::1' first, causing connection errors.
+  if (process.env.NODE_ENV !== 'production') {
+    config.host = '127.0.0.1';
+  }
+
+  pool = new Pool(config);
+  console.log('Connecting to database using .env file for local development.');
 }
 
 // Test the connection and export the query function
